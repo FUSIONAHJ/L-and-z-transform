@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Interactive Laplace to Z-Transform</title>
+    <style>
+        body { font-family: system-ui, -apple-system, sans-serif; background-color: #ffffff; color: #1e293b; display: flex; flex-direction: column; align-items: center; padding: 2rem; }
+        h1 { margin: 0 0 0.5rem 0; color: #0f172a; text-align: center; }
+        p.subtitle { margin: 0 0 2rem 0; color: #64748b; text-align: center; }
+        
+        .main-container { display: flex; flex-wrap: wrap; justify-content: center; gap: 2rem; align-items: center; margin-bottom: 2rem; }
+        .plane-container { display: flex; flex-direction: column; align-items: center; }
+        .plane-title { font-weight: 600; color: #64748b; margin-bottom: 0.5rem; }
+        
+        svg { background-color: #f8fafc; border: 1px solid #cbd5e1; border-radius: 0.5rem; touch-action: none; box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05); }
+        #s-plane { cursor: crosshair; }
+        
+        .coords { font-family: monospace; margin-top: 0.75rem; color: #475569; font-size: 0.9rem; background: #f1f5f9; padding: 0.25rem 0.75rem; border-radius: 9999px; border: 1px solid #e2e8f0; }
+        
+        .arrow-section { display: flex; flex-direction: column; align-items: center; color: #94a3b8; font-style: italic; }
+        .arrow { font-size: 2rem; margin-bottom: 0.5rem; }
+        
+        .controls { background: #f8fafc; padding: 1.5rem; border-radius: 0.75rem; border: 1px solid #e2e8f0; width: 100%; max-width: 400px; }
+        .control-header { display: flex; justify-content: space-between; margin-bottom: 0.5rem; font-weight: 500; font-size: 0.9rem; }
+        .t-value { color: #4f46e5; font-weight: 700; font-family: monospace; font-size: 1.1rem; }
+        input[type=range] { width: 100%; cursor: pointer; accent-color: #4f46e5; }
+        .range-labels { display: flex; justify-content: space-between; margin-top: 0.5rem; color: #94a3b8; font-size: 0.8rem; }
+    </style>
+</head>
+<body>
+    <h1>Signal Transform Mapping</h1>
+    <p class="subtitle">Interactive visualization: Drag the point on the S-Plane and adjust T.</p>
+
+    <div class="main-container">
+        <!-- S Plane -->
+        <div class="plane-container">
+            <div class="plane-title">S-Plane (Laplace)</div>
+            <svg id="s-plane" width="300" height="300" viewBox="0 0 300 300">
+                <!-- Stability Region LHP -->
+                <rect x="0" y="0" width="150" height="300" fill="rgba(16, 185, 129, 0.1)" />
+                <!-- Grid -->
+                <defs>
+                    <pattern id="grid" width="30" height="30" patternUnits="userSpaceOnUse">
+                        <path d="M 30 0 L 0 0 0 30" fill="none" stroke="#e2e8f0" stroke-width="1" stroke-dasharray="4 4"/>
+                    </pattern>
+                </defs>
+                <rect width="300" height="300" fill="url(#grid)" />
+                <!-- Axes -->
+                <line x1="150" y1="0" x2="150" y2="300" stroke="#94a3b8" stroke-width="2" />
+                <line x1="0" y1="150" x2="300" y2="150" stroke="#94a3b8" stroke-width="2" />
+                <text x="280" y="140" fill="#94a3b8" font-size="12" text-anchor="end">σ</text>
+                <text x="160" y="20" fill="#94a3b8" font-size="12">jω</text>
+                <!-- Marker -->
+                <circle id="s-marker" cx="125" cy="100" r="8" fill="#6366f1" stroke="white" stroke-width="2" />
+            </svg>
+            <div class="coords" id="s-coords">s = -0.50 + j1.00</div>
+        </div>
+
+        <div class="arrow-section">
+            <span class="arrow">➔</span>
+            <span>z = e<sup>sT</sup></span>
+        </div>
+
+        <!-- Z Plane -->
+        <div class="plane-container">
+            <div class="plane-title">Z-Plane (Discrete)</div>
+            <svg id="z-plane" width="300" height="300" viewBox="0 0 300 300">
+                <!-- Unit Circle -->
+                <circle cx="150" cy="150" r="80" fill="rgba(16, 185, 129, 0.1)" stroke="#d97706" stroke-width="2" />
+                <text x="235" y="165" fill="#d97706" font-size="10">1</text>
+                <!-- Grid Circles -->
+                <circle cx="150" cy="150" r="40" fill="none" stroke="#e2e8f0" stroke-width="1" stroke-dasharray="4 4"/>
+                <circle cx="150" cy="150" r="120" fill="none" stroke="#e2e8f0" stroke-width="1" stroke-dasharray="4 4"/>
+                <!-- Axes -->
+                <line x1="150" y1="0" x2="150" y2="300" stroke="#94a3b8" stroke-width="2" />
+                <line x1="0" y1="150" x2="300" y2="150" stroke="#94a3b8" stroke-width="2" />
+                <text x="280" y="140" fill="#94a3b8" font-size="12" text-anchor="end">Re</text>
+                <text x="160" y="20" fill="#94a3b8" font-size="12">Im</text>
+                <!-- Marker -->
+                <line id="z-vector" x1="150" y1="150" x2="150" y2="150" stroke="#ec4899" stroke-width="1" stroke-dasharray="4 2" />
+                <circle id="z-marker" cx="150" cy="150" r="8" fill="#ec4899" stroke="white" stroke-width="2" />
+            </svg>
+            <div class="coords" id="z-coords">z = 0.00 + j0.00</div>
+        </div>
+    </div>
+
+    <div class="controls">
+        <div class="control-header">
+            <span>Sampling Period (T)</span>
+            <span class="t-value" id="t-display">0.5s</span>
+        </div>
+        <input type="range" id="t-slider" min="0.1" max="2.0" step="0.1" value="0.5">
+        <div class="range-labels">
+            <span>0.1s</span>
+            <span>2.0s</span>
+        </div>
+    </div>
+
+    <script>
+        // State
+        let s = { real: -0.5, imag: 1 };
+        let T = 0.5;
+        
+        // Constants
+        const sScale = 50;
+        const zScale = 80;
+        const center = 150;
+        
+        // Elements
+        const sSvg = document.getElementById('s-plane');
+        const sMarker = document.getElementById('s-marker');
+        const sCoords = document.getElementById('s-coords');
+        
+        const zMarker = document.getElementById('z-marker');
+        const zVector = document.getElementById('z-vector');
+        const zCoords = document.getElementById('z-coords');
+        
+        const tSlider = document.getElementById('t-slider');
+        const tDisplay = document.getElementById('t-display');
+        
+        // Helper
+        function updateZ() {
+            // z = e^(sT)
+            const mag = Math.exp(s.real * T);
+            const phase = s.imag * T;
+            
+            const zReal = mag * Math.cos(phase);
+            const zImag = mag * Math.sin(phase);
+            
+            // Map to pixels (SVG y is inverted relative to math y)
+            const zPx = center + zReal * zScale;
+            const zPy = center - zImag * zScale;
+            
+            zMarker.setAttribute('cx', zPx);
+            zMarker.setAttribute('cy', zPy);
+            zVector.setAttribute('x2', zPx);
+            zVector.setAttribute('y2', zPy);
+            
+            zCoords.textContent = `z = ${zReal.toFixed(2)} + j${zImag.toFixed(2)}`;
+        }
+        
+        function updateSFromEvent(e) {
+            const rect = sSvg.getBoundingClientRect();
+            let clientX = e.clientX;
+            let clientY = e.clientY;
+            
+            // Handle touch
+            if(e.touches && e.touches.length > 0) {
+                clientX = e.touches[0].clientX;
+                clientY = e.touches[0].clientY;
+            }
+            
+            let x = clientX - rect.left;
+            let y = clientY - rect.top;
+            
+            // Clamp to SVG bounds
+            x = Math.max(0, Math.min(300, x));
+            y = Math.max(0, Math.min(300, y));
+            
+            // Update Visual
+            sMarker.setAttribute('cx', x);
+            sMarker.setAttribute('cy', y);
+            
+            // Update Math
+            s.real = (x - center) / sScale;
+            s.imag = -(y - center) / sScale;
+            
+            sCoords.textContent = `s = ${s.real.toFixed(2)} + j${s.imag.toFixed(2)}`;
+            
+            updateZ();
+        }
+        
+        // Initial Update
+        updateZ();
+        
+        // Event Listeners
+        let isDragging = false;
+        
+        sSvg.addEventListener('mousedown', (e) => {
+            isDragging = true;
+            updateSFromEvent(e);
+        });
+        
+        sSvg.addEventListener('touchstart', (e) => {
+            isDragging = true;
+            e.preventDefault(); // Prevent scroll
+            updateSFromEvent(e);
+        }, { passive: false });
+        
+        window.addEventListener('mousemove', (e) => {
+            if(isDragging) updateSFromEvent(e);
+        });
+        
+        window.addEventListener('touchmove', (e) => {
+            if(isDragging) {
+                e.preventDefault();
+                updateSFromEvent(e);
+            }
+        }, { passive: false });
+        
+        window.addEventListener('mouseup', () => isDragging = false);
+        window.addEventListener('touchend', () => isDragging = false);
+        
+        tSlider.addEventListener('input', (e) => {
+            T = parseFloat(e.target.value);
+            tDisplay.textContent = T.toFixed(1) + 's';
+            updateZ();
+        });
+    </script>
+</body>
+</html>
